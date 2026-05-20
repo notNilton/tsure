@@ -1,0 +1,68 @@
+{{define "availability-panel"}}
+<section class="panel panel--full">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Disponibilidade</p>
+      <h3>Consulta de estoque por periodo</h3>
+    </div>
+    <p class="table-note">Verifique o que esta livre antes de montar a proposta.</p>
+  </div>
+
+  <div style="padding:0 1rem 0.75rem;">
+    <form
+      hx-get="/availability"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:end;"
+    >
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">De</label>
+        <input type="date" name="from" value="{{.FromDate}}" required style="padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Ate</label>
+        <input type="date" name="until" value="{{.UntilDate}}" required style="padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <button type="submit" class="advance">Consultar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="order-sheet">
+    <div class="order-grid-head" aria-hidden="true">
+      <span>Codigo</span>
+      <span>Nome</span>
+      <span>Total</span>
+      <span>Reservado</span>
+      <span>Disponivel</span>
+    </div>
+    <div class="order-grid">
+      {{if .AvailabilityList}}
+        {{range .AvailabilityList}}
+          <article class="order-row">
+            <div class="order-cell order-cell--code">
+              <p class="order-code">{{.EquipmentCode}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.EquipmentName}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.TotalQty}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-subtle">{{.ReservedQty}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-money" style="color:{{if le .AvailableQty 0}}var(--danger){{else}}var(--green){{end}};">{{.AvailableQty}}</p>
+            </div>
+          </article>
+        {{end}}
+      {{else}}
+        <div class="empty-state">Selecione um periodo para consultar disponibilidade.</div>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}
