@@ -1,0 +1,62 @@
+{{define "checklist-panel"}}
+<div style="padding:1rem;border-top:1px solid var(--line);background:#fff;">
+  <h4 style="margin:0 0 0.75rem;font-size:1rem;">Conferencia de retorno - OS {{.OrderID}}</h4>
+  <p style="margin:0 0 1rem;color:var(--muted);font-size:0.85rem;">Confirme a condicao de cada item antes de encerrar a ordem de servico.</p>
+
+  <form
+    hx-post="/orders/checklist/{{.OrderID}}"
+    hx-target="#operations-panel"
+    hx-swap="innerHTML"
+    hx-indicator=".htmx-indicator"
+    style="display:grid;gap:0.6rem;"
+  >
+    {{range .Items}}
+    <div style="display:grid;gap:0.35rem;padding:0.7rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-soft);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="font-size:0.9rem;">{{.EquipmentCode}} - {{.EquipmentName}}</strong>
+        <span style="font-size:0.78rem;color:var(--muted);">Qtde: {{.Quantity}}</span>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;cursor:pointer;">
+          <input type="radio" name="status_{{.EquipmentID}}" value="ok" required />
+          Retornado OK
+        </label>
+        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;cursor:pointer;color:var(--amber);">
+          <input type="radio" name="status_{{.EquipmentID}}" value="avariado" />
+          Avariado
+        </label>
+        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;cursor:pointer;color:var(--danger);">
+          <input type="radio" name="status_{{.EquipmentID}}" value="perdido" />
+          Perdido
+        </label>
+        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;cursor:pointer;color:var(--muted);">
+          <input type="radio" name="status_{{.EquipmentID}}" value="nao_retornado" />
+          Nao retornado
+        </label>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <input
+          type="text"
+          name="notes_{{.EquipmentID}}"
+          placeholder="Observacoes"
+          style="flex:1;padding:0.35rem 0.5rem;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:0.82rem;"
+        />
+        <input
+          type="number"
+          name="charge_{{.EquipmentID}}"
+          placeholder="R$ custo"
+          min="0"
+          step="0.01"
+          style="width:120px;padding:0.35rem 0.5rem;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:0.82rem;"
+        />
+      </div>
+    </div>
+    {{end}}
+
+    <div style="display:flex;gap:0.6rem;justify-content:flex-end;padding-top:0.5rem;">
+      <button type="button" class="delete" hx-get="/orders" hx-target="#operations-panel" hx-swap="innerHTML">Cancelar</button>
+      <button type="submit" class="advance">Confirmar retorno e encerrar OS</button>
+    </div>
+  </form>
+</div>
+{{end}}
