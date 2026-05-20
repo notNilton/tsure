@@ -1,0 +1,174 @@
+{{define "budgets-panel"}}
+<section class="panel panel--full" id="budgets-panel">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Comercial</p>
+      <h3>Orçamentos e propostas</h3>
+    </div>
+    <p class="table-note">Crie propostas, adicione itens e converta em ordem de servico.</p>
+  </div>
+
+  <div class="status-filter-bar" style="padding:0 1rem 0.75rem;">
+    <button
+      class="status-filter is-active"
+      hx-get="/budgets"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      type="button"
+    >Todos</button>
+    <button
+      class="status-filter"
+      hx-get="/budgets?status=rascunho"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      type="button"
+    >Rascunho</button>
+    <button
+      class="status-filter"
+      hx-get="/budgets?status=em_analise"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      type="button"
+    >Em analise</button>
+    <button
+      class="status-filter"
+      hx-get="/budgets?status=aprovado"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      type="button"
+    >Aprovado</button>
+    <button
+      class="status-filter"
+      hx-get="/budgets?status=convertido"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      type="button"
+    >Convertido</button>
+  </div>
+
+  <div style="padding:0 1rem 0.75rem;">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Novo orçamento</h4>
+    <form
+      hx-post="/budgets"
+      hx-target="#budgets-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      style="display:grid;gap:0.6rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;"
+    >
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Cliente</label>
+        <input type="text" name="customerName" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Evento</label>
+        <input type="text" name="eventName" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Cidade</label>
+        <input type="text" name="eventCity" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Data evento</label>
+        <input type="date" name="eventDate" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Instalacao</label>
+        <input type="date" name="installDate" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Retorno</label>
+        <input type="date" name="returnDate" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Veiculo</label>
+        <input type="text" name="vehicleLabel" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Equipe</label>
+        <input type="number" name="crewSize" value="4" min="1" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Valido ate</label>
+        <input type="date" name="validUntil" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Observacoes</label>
+        <input type="text" name="notes" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Equipamentos (informe instalacao e retorno para ver disponiveis)</label>
+        <select name="equipmentIDs" multiple size="4"
+          hx-get="/available-equipment"
+          hx-target="this"
+          hx-trigger="change from:[name='installDate'], change from:[name='returnDate']"
+          hx-include="[name='installDate'], [name='returnDate']"
+          style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;"
+        >
+          <option value="">Preencha instalacao e retorno para ver equipamentos</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <button type="submit" class="advance">Criar orçamento</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="order-sheet">
+    <div class="order-grid-head" aria-hidden="true">
+      <span>Numero</span>
+      <span>Cliente / Evento</span>
+      <span>Datas</span>
+      <span>Valor</span>
+      <span>Status</span>
+      <span>Acoes</span>
+    </div>
+    <div class="order-grid">
+      {{if .BudgetList}}
+        {{range .BudgetList}}
+          <article class="order-row">
+            <div class="order-cell order-cell--code">
+              <p class="order-code">{{.Code}}</p>
+              <span class="order-subtle">{{formatDate .EventDate}}</span>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.CustomerName}}</p>
+              <p class="order-subtle">{{.EventName}} | {{.EventCity}}</p>
+            </div>
+            <div class="order-cell">
+              {{if .InstallDate}}<span class="order-subtle">Inst: {{formatDate .InstallDate}}</span>{{end}}
+              {{if .ReturnDate}}<span class="order-subtle">Ret: {{formatDate .ReturnDate}}</span>{{end}}
+            </div>
+            <div class="order-cell order-cell--money">
+              <p class="order-money">{{formatMoney .TotalAmount}}</p>
+            </div>
+            <div class="order-cell">
+              <span class="status-pill">{{.Status}}</span>
+            </div>
+            <div class="order-actions">
+              {{if eq .Status "rascunho"}}
+                <button type="button" class="advance" style="font-size:0.72rem;"
+                  hx-put="/budgets/{{.ID}}?status=em_analise"
+                  hx-target="#budgets-panel"
+                  hx-swap="innerHTML"
+                >Enviar analise</button>
+              {{else if eq .Status "em_analise"}}
+                <button type="button" class="advance" style="font-size:0.72rem;"
+                  hx-put="/budgets/{{.ID}}?status=aprovado"
+                  hx-target="#budgets-panel"
+                  hx-swap="innerHTML"
+                >Aprovar e converter</button>
+              {{else if eq .Status "aprovado"}}
+                <span class="order-subtle">Aprovado</span>
+              {{else if eq .Status "convertido"}}
+                <span class="order-subtle" style="color:var(--green);">Convertido em OS</span>
+              {{end}}
+            </div>
+          </article>
+        {{end}}
+      {{else}}
+        <div class="empty-state">Nenhum orçamento cadastrado.</div>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}
