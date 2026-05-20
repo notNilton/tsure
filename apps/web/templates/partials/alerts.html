@@ -1,0 +1,82 @@
+{{define "alerts-panel"}}
+<section class="panel panel--full" style="border-left:4px solid var(--danger);">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker" style="color:var(--danger);">Alertas operacionais</p>
+      <h3>Pendencias que exigem atencao</h3>
+    </div>
+  </div>
+
+  {{if .OverdueOrders}}
+    <div style="margin-bottom:1rem;">
+      <h4 style="margin:0 0 0.5rem;font-size:0.9rem;color:var(--danger);">OS atrasadas (data do evento ja passou)</h4>
+      <div class="order-sheet">
+        <div class="order-grid-head" aria-hidden="true">
+          <span>OS</span>
+          <span>Cliente</span>
+          <span>Evento</span>
+          <span>Data</span>
+          <span>Status</span>
+        </div>
+        <div class="order-grid">
+          {{range .OverdueOrders}}
+            <article class="order-row">
+              <div class="order-cell order-cell--code">
+                <p class="order-code">{{.Code}}</p>
+              </div>
+              <div class="order-cell">
+                <p class="order-mainline">{{.CustomerName}}</p>
+              </div>
+              <div class="order-cell">
+                <p class="order-mainline">{{.EventName}}</p>
+              </div>
+              <div class="order-cell">
+                <p class="order-subtle">{{formatDate .EventDate}}</p>
+              </div>
+              <div class="order-cell">
+                <span class="status-pill">{{statusLabel .Status}}</span>
+              </div>
+            </article>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  {{end}}
+
+  {{if .ChecklistIssues}}
+    <div>
+      <h4 style="margin:0 0 0.5rem;font-size:0.9rem;color:var(--amber);">Problemas no retorno (avariado / perdido / nao retornado)</h4>
+      <div class="order-sheet">
+        <div class="order-grid-head" aria-hidden="true">
+          <span>OS</span>
+          <span>Equipamento</span>
+          <span>Problema</span>
+          <span>Observacao</span>
+        </div>
+        <div class="order-grid">
+          {{range .ChecklistIssues}}
+            <article class="order-row">
+              <div class="order-cell order-cell--code">
+                <p class="order-code">OS-{{.ServiceOrderID}}</p>
+              </div>
+              <div class="order-cell">
+                <p class="order-mainline">{{.EquipmentCode}} - {{.EquipmentName}}</p>
+              </div>
+              <div class="order-cell">
+                <span class="status-pill" style="text-transform:capitalize;">{{.Status}}</span>
+              </div>
+              <div class="order-cell">
+                <p class="order-subtle">{{.Notes}}</p>
+              </div>
+            </article>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  {{end}}
+
+  {{if and (not .OverdueOrders) (not .ChecklistIssues)}}
+    <div class="empty-state">Nenhum alerta operacional no momento. Tudo sob controle.</div>
+  {{end}}
+</section>
+{{end}}
