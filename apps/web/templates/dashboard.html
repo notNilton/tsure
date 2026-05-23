@@ -8,20 +8,21 @@
     <link rel="icon" href="/static/favicon.ico" type="image/png" />
     <link rel="stylesheet" href="/static/style.css" />
     <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+    <script src="https://unpkg.com/htmx-ext-preload@2.1.0/preload.js"></script>
   </head>
-  <body>
+  <body hx-ext="preload" hx-boost="true">
     <header class="topnav">
       <div class="topnav-brand">
         <strong>tsure</strong>
         <span>ERP de locacoes</span>
       </div>
       <nav class="topnav-tabs" aria-label="Modulos">
-        <a href="#comercial">Comercial</a>
-        <a href="#operacao">Operacao</a>
-        <a href="#financeiro">Financeiro</a>
-        <a href="#fiscal">Fiscal</a>
-        <a href="#recursos">Recursos</a>
-        <a href="#admin">Administracao</a>
+        <a href="#comercial" preload="mouseover">Comercial</a>
+        <a href="#operacao" preload="mouseover">Operacao</a>
+        <a href="#financeiro" preload="mouseover">Financeiro</a>
+        <a href="#fiscal" preload="mouseover">Fiscal</a>
+        <a href="#recursos" preload="mouseover">Recursos</a>
+        <a href="#admin" preload="mouseover">Administracao</a>
       </nav>
       <div class="topnav-user">
         <span class="user-pill" title="{{.User.Email}}">
@@ -47,8 +48,8 @@
           <h2>Comercial</h2>
           <p>Clientes, contatos, orcamentos, aprovacoes e conversao em OS.</p>
           <ul>
-            <li><a href="/clientes">Clientes</a></li>
-            <li><a href="/orcamentos">Orcamentos</a></li>
+            <li><a href="/clientes" preload="mouseover">Clientes</a></li>
+            <li><a href="/orcamentos" preload="mouseover">Orcamentos</a></li>
           </ul>
         </article>
 
@@ -56,8 +57,8 @@
           <h2>Operacao</h2>
           <p>Agenda, ordens de servico, instalacoes, retiradas e ocorrencias.</p>
           <ul>
-            <li><a href="/orders">Ordens de servico</a></li>
-            <li><a href="/agenda">Agenda</a></li>
+            <li><a href="/orders" preload="mouseover">Ordens de servico</a></li>
+            <li><a href="/agenda" preload="mouseover">Agenda</a></li>
           </ul>
         </article>
 
@@ -65,8 +66,8 @@
           <h2>Financeiro</h2>
           <p>Contas a receber, recebimentos, saldos e inadimplencia.</p>
           <ul>
-            <li><a href="/financeiro/contas-receber">Contas a receber</a></li>
-            <li><a href="/financeiro/recebimentos">Recebimentos</a></li>
+            <li><a href="/financeiro/contas-receber" preload="mouseover">Contas a receber</a></li>
+            <li><a href="/financeiro/recebimentos" preload="mouseover">Recebimentos</a></li>
           </ul>
         </article>
 
@@ -74,7 +75,7 @@
           <h2>Fiscal</h2>
           <p>Documentos fiscais, emissao, cancelamento e reemissao.</p>
           <ul>
-            <li><a href="/fiscal/documentos">Documentos</a></li>
+            <li><a href="/fiscal/documentos" preload="mouseover">Documentos</a></li>
           </ul>
         </article>
 
@@ -82,9 +83,9 @@
           <h2>Recursos</h2>
           <p>Funcionarios, escalas, ponto, localizacao, frota e inventario.</p>
           <ul>
-            <li><a href="/funcionarios">Funcionarios</a></li>
-            <li><a href="/frota">Frota</a></li>
-            <li><a href="/inventario">Inventario</a></li>
+            <li><a href="/funcionarios" preload="mouseover">Funcionarios</a></li>
+            <li><a href="/frota" preload="mouseover">Frota</a></li>
+            <li><a href="/inventario" preload="mouseover">Inventario</a></li>
           </ul>
         </article>
 
@@ -92,8 +93,8 @@
           <h2>Administracao</h2>
           <p>Usuarios, perfis, permissoes, parametros e auditoria.</p>
           <ul>
-            <li><a href="/admin/usuarios">Usuarios</a></li>
-            <li><a href="/admin/auditoria">Logs de auditoria</a></li>
+            <li><a href="/admin/usuarios" preload="mouseover">Usuarios</a></li>
+            <li><a href="/admin/auditoria" preload="mouseover">Logs de auditoria</a></li>
           </ul>
         </article>
       </section>

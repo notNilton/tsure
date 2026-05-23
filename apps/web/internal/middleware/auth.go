@@ -16,10 +16,28 @@ const SessionCookieName = "tsure_session"
 
 // WebAuth e o middleware que protege rotas SSR: exige cookie de sessao
 // valido. Em caso de falha, redireciona para /login (GET) ou devolve 401
-// para outras verbos.
+// para outras verbos. Usa Cache para evitar round-trips ao DB.
 type WebAuth struct {
 	Users    *auth.Store
 	Sessions *auth.SessionStore
+	Cache    *SessionCache // opcional; quando setado, evita queries em hits
+}
+
+// resolve tenta cache primeiro, depois DB (1 query consolidada).
+func (w WebAuth) resolve(r *http.Request, token string) (auth.User, auth.Session, error) {
+	if w.Cache != nil {
+		if u, s, ok := w.Cache.Get(token); ok {
+			return u, s, nil
+		}
+	}
+	user, sess, err := w.Sessions.LookupWithUser(r.Context(), token)
+	if err != nil {
+		return auth.User{}, auth.Session{}, err
+	}
+	if w.Cache != nil {
+		w.Cache.Put(token, user, sess)
+	}
+	return user, sess, nil
 }
 
 // Required envolve handler em validacao obrigatoria.
@@ -30,18 +48,11 @@ func (w WebAuth) Required(next http.Handler) http.Handler {
 			redirectToLogin(rw, r)
 			return
 		}
-		sess, err := w.Sessions.Lookup(r.Context(), cookie.Value)
+		user, _, err := w.resolve(r, cookie.Value)
 		if err != nil {
-			if errors.Is(err, auth.ErrSessionNotFound) {
-				redirectToLogin(rw, r)
-				return
-			}
-			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-		user, err := w.Users.GetByID(r.Context(), sess.UserID)
-		if err != nil {
-			if errors.Is(err, auth.ErrInvalidCredentials) || errors.Is(err, auth.ErrUserDisabled) {
+			if errors.Is(err, auth.ErrSessionNotFound) ||
+				errors.Is(err, auth.ErrUserDisabled) ||
+				errors.Is(err, auth.ErrInvalidCredentials) {
 				redirectToLogin(rw, r)
 				return
 			}
@@ -62,11 +73,9 @@ func (w WebAuth) Optional(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		if cookie, err := r.Cookie(SessionCookieName); err == nil && cookie.Value != "" {
-			if sess, err := w.Sessions.Lookup(ctx, cookie.Value); err == nil {
-				if user, err := w.Users.GetByID(ctx, sess.UserID); err == nil {
-					ctx = WithUser(ctx, user)
-					ctx = WithSessionToken(ctx, cookie.Value)
-				}
+			if user, _, err := w.resolve(r, cookie.Value); err == nil {
+				ctx = WithUser(ctx, user)
+				ctx = WithSessionToken(ctx, cookie.Value)
 			}
 		}
 		next.ServeHTTP(rw, r.WithContext(ctx))

@@ -56,7 +56,19 @@ func main() {
 
 	cfg := configFromEnv()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("parse DATABASE_URL: %v", err)
+	}
+	// Mantemos pelo menos 2 conexoes quentes  evita pagar setup TCP/TLS
+	// a cada request sob WAN. Ajustavel via pool_min_conns na URL.
+	if poolCfg.MinConns < 2 {
+		poolCfg.MinConns = 2
+	}
+	if poolCfg.MaxConns < 10 {
+		poolCfg.MaxConns = 10
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		log.Fatalf("connect postgres: %v", err)
 	}
@@ -128,7 +140,12 @@ func main() {
 
 	a := &app{store: ordersStore, templates: tmpl}
 
-	webAuth := middleware.WebAuth{Users: usersStore, Sessions: sessionStore}
+	sessionCache := middleware.NewSessionCache(30 * time.Second)
+	webAuth := middleware.WebAuth{
+		Users:    usersStore,
+		Sessions: sessionStore,
+		Cache:    sessionCache,
+	}
 	apiAuth := middleware.APIAuth{Users: usersStore, Signer: jwtSigner}
 	authHandler := handlers.AuthHandler{
 		Users:        usersStore,
@@ -136,6 +153,7 @@ func main() {
 		JWT:          jwtSigner,
 		SecureCookie: cfg.SecureCookie,
 		Templates:    tmpl,
+		SessionCache: sessionCache,
 	}
 
 	mux := http.NewServeMux()

@@ -8,17 +8,18 @@
     <link rel="icon" href="/static/favicon.ico" type="image/png" />
     <link rel="stylesheet" href="/static/style.css" />
     <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+    <script src="https://unpkg.com/htmx-ext-preload@2.1.0/preload.js"></script>
   </head>
-  <body>
+  <body hx-ext="preload" hx-boost="true">
     <header class="topnav">
       <div class="topnav-brand">
         <a href="/" style="color:inherit;text-decoration:none"><strong>tsure</strong></a>
         <span>Clientes</span>
       </div>
       <nav class="topnav-tabs" aria-label="Modulos">
-        <a href="/">Dashboard</a>
-        <a href="/clientes" class="active">Clientes</a>
-        <a href="/orders">Ordens</a>
+        <a href="/" preload="mouseover">Dashboard</a>
+        <a href="/clientes" class="active" preload="mouseover">Clientes</a>
+        <a href="/orders" preload="mouseover">Ordens</a>
       </nav>
       <div class="topnav-user">
         <span class="user-pill" title="{{.User.Email}}">
@@ -76,6 +77,12 @@
     </main>
 
     <script>
+    (function () {
+      // Guard: ao chegar via hx-boost o script roda de novo; listeners
+      // delegados no body sao globais e nao podem ser duplicados.
+      const alreadyBound = window.__tsureClientesBound === true;
+      window.__tsureClientesBound = true;
+
       // ----- Mascaras -----
       function onlyDigits(s) { return (s || "").replace(/\D+/g, ""); }
       function maskCPF(v) {
@@ -148,22 +155,28 @@
           syncMotivo();
         }
       }
-      document.addEventListener("DOMContentLoaded", initClienteForm);
-      document.body.addEventListener("htmx:afterSwap", initClienteForm);
+      // Sempre re-bind do form atual (apos qualquer swap parcial / boost).
+      initClienteForm();
 
-      // ----- Acoes da barra -----
-      document.body.addEventListener("click", (e) => {
-        const t = e.target.closest("[data-action]");
-        if (!t) return;
-        const action = t.dataset.action;
-        if (action === "focar-busca") {
-          const input = document.querySelector("#cliente-search");
-          if (input) { input.focus(); input.select(); }
-        }
-        if (action === "fechar") {
-          window.location.href = "/";
-        }
-      });
+      if (!alreadyBound) {
+        document.addEventListener("DOMContentLoaded", initClienteForm);
+        document.body.addEventListener("htmx:afterSwap", initClienteForm);
+
+        // ----- Acoes da barra (delegacao global, uma vez so) -----
+        document.body.addEventListener("click", (e) => {
+          const t = e.target.closest("[data-action]");
+          if (!t) return;
+          const action = t.dataset.action;
+          if (action === "focar-busca") {
+            const input = document.querySelector("#cliente-search");
+            if (input) { input.focus(); input.select(); }
+          }
+          if (action === "fechar") {
+            window.location.href = "/";
+          }
+        });
+      }
+    })();
     </script>
   </body>
 </html>

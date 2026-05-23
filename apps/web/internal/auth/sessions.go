@@ -94,6 +94,58 @@ func (s *SessionStore) Lookup(ctx context.Context, token string) (Session, error
 	return sess, nil
 }
 
+// LookupWithUser resolve token de sessao  Sessao + Usuario + permissoes
+// em UMA UNICA query, fazendo o JOIN com usuarios / user_roles /
+// role_permissions / permissions. Reduz auth de 3 round-trips para 1.
+func (s *SessionStore) LookupWithUser(ctx context.Context, token string) (User, Session, error) {
+	if token == "" {
+		return User{}, Session{}, ErrSessionNotFound
+	}
+	hash := sha256.Sum256([]byte(token))
+	hashHex := hex.EncodeToString(hash[:])
+
+	var (
+		u     User
+		sess  Session
+		perms []string
+	)
+	err := s.pool.QueryRow(ctx, `
+		SELECT
+		    u.id, u.login, u.email::text, u.nome, u.papel::text, u.ativo,
+		    s.id, s.user_id, s.expires_at,
+		    COALESCE(
+		        array_agg(DISTINCT p.codigo) FILTER (WHERE p.codigo IS NOT NULL),
+		        '{}'
+		    ) AS permissions
+		FROM user_sessions s
+		JOIN usuarios u ON u.id = s.user_id
+		LEFT JOIN user_roles ur ON ur.user_id = u.id
+		LEFT JOIN role_permissions rp ON rp.role_id = ur.role_id
+		LEFT JOIN permissions p ON p.id = rp.permission_id
+		WHERE s.token_hash = $1
+		  AND s.revoked_at IS NULL
+		  AND s.expires_at > NOW()
+		  AND u.deleted_at IS NULL
+		GROUP BY u.id, u.login, u.email, u.nome, u.papel, u.ativo,
+		         s.id, s.user_id, s.expires_at
+	`, hashHex).Scan(
+		&u.ID, &u.Login, &u.Email, &u.Nome, &u.Papel, &u.Ativo,
+		&sess.ID, &sess.UserID, &sess.ExpiresAt,
+		&perms,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, Session{}, ErrSessionNotFound
+		}
+		return User{}, Session{}, fmt.Errorf("lookup session+user: %w", err)
+	}
+	if !u.Ativo {
+		return User{}, Session{}, ErrUserDisabled
+	}
+	u.Permissions = perms
+	return u, sess, nil
+}
+
 // Revoke marca uma sessao como invalidada (logout). Idempotente.
 func (s *SessionStore) Revoke(ctx context.Context, token string) error {
 	if token == "" {

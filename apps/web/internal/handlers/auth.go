@@ -22,6 +22,7 @@ type AuthHandler struct {
 	JWT          *auth.JWTSigner
 	SecureCookie bool
 	Templates    render.Executor
+	SessionCache *middleware.SessionCache // opcional; invalidado no logout
 }
 
 // LoginPageData e o ViewModel da pagina /login.
@@ -87,6 +88,9 @@ func (h AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (h AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	if token := middleware.SessionTokenFromContext(r.Context()); token != "" {
 		_ = h.Sessions.Revoke(r.Context(), token)
+		if h.SessionCache != nil {
+			h.SessionCache.Invalidate(token)
+		}
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     middleware.SessionCookieName,
