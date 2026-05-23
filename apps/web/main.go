@@ -15,18 +15,22 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 
 	"tsure/apps/web/internal/auth"
 	"tsure/apps/web/internal/budgets"
+	"tsure/apps/web/internal/clientes"
 	"tsure/apps/web/internal/handlers"
 	"tsure/apps/web/internal/inventory"
 	"tsure/apps/web/internal/middleware"
 	"tsure/apps/web/internal/orders"
+	"tsure/apps/web/internal/render"
 )
 
 //go:embed templates/*.html templates/partials/*.html public/*
@@ -34,7 +38,7 @@ var embeddedAssets embed.FS
 
 type app struct {
 	store     *orders.Store
-	templates *template.Template
+	templates render.Executor
 }
 
 type pageData struct {
@@ -45,6 +49,8 @@ type pageData struct {
 }
 
 func main() {
+	loadDotEnv()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -82,16 +88,43 @@ func main() {
 	sessionStore := auth.NewSessionStore(pool, cfg.SessionTTL)
 	jwtSigner := auth.NewJWTSigner(cfg.JWTKey, cfg.JWTTTL)
 
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+	funcs := template.FuncMap{
 		"formatMoney":     formatMoneyBRL,
 		"formatDate":      formatDateBR,
 		"statusLabel":     orders.StatusLabel,
 		"nextStatusLabel": orders.NextStatusLabel,
-	}).ParseFS(
-		embeddedAssets,
-		"templates/*.html",
-		"templates/partials/*.html",
-	))
+		"rowsData": func(items []clientes.Cliente, query string) clientes.RowsData {
+			return clientes.RowsData{Clientes: items, Query: query}
+		},
+	}
+
+	var tmpl render.Executor
+	if cfg.DevMode {
+		// Dev: le do disco a cada render. Hot-reload de .html sem rebuild.
+		reloader, err := render.NewReloader(
+			"apps/web/templates",
+			[]string{"*.html", "partials/*.html"},
+			funcs,
+		)
+		if err != nil {
+			log.Fatalf("init template reloader: %v", err)
+		}
+		log.Printf("hot-reload de templates ATIVO (TSURE_ENV=dev)")
+		tmpl = reloader
+	} else {
+		t, err := render.LoadEmbedded(
+			embeddedAssets,
+			[]string{"templates/*.html", "templates/partials/*.html"},
+			funcs,
+		)
+		if err != nil {
+			log.Fatalf("load embedded templates: %v", err)
+		}
+		tmpl = t
+	}
+
+	clientesStore := clientes.NewStore(pool)
+	clientesHandler := clientes.NewHandler(clientesStore, tmpl)
 
 	a := &app{store: ordersStore, templates: tmpl}
 
@@ -133,6 +166,26 @@ func main() {
 		),
 	))
 
+	// ---- Clientes (SSR + HTMX)
+	clientesRead := middleware.RequireAnyPermission("clientes.read", "clientes.write")
+	clientesWrite := middleware.RequirePermission("clientes.write")
+	mux.Handle("/clientes", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			clientesWrite(http.HandlerFunc(clientesHandler.ServeIndex)).ServeHTTP(w, r)
+			return
+		}
+		clientesRead(http.HandlerFunc(clientesHandler.ServeIndex)).ServeHTTP(w, r)
+	})))
+	mux.Handle("/clientes/rows", webAuth.Required(clientesRead(http.HandlerFunc(clientesHandler.ServeRows))))
+	mux.Handle("/clientes/new", webAuth.Required(clientesWrite(http.HandlerFunc(clientesHandler.ServeNew))))
+	mux.Handle("/clientes/", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			clientesWrite(http.HandlerFunc(clientesHandler.ServeByID)).ServeHTTP(w, r)
+			return
+		}
+		clientesRead(http.HandlerFunc(clientesHandler.ServeByID)).ServeHTTP(w, r)
+	})))
+
 	// ---- API JSON (mobile)  JWT bearer, sem CSRF
 	mux.Handle("/api/auth/login", http.HandlerFunc(authHandler.APILogin))
 	mux.Handle("/api/auth/me", apiAuth.Required(http.HandlerFunc(authHandler.APIMe)))
@@ -173,6 +226,34 @@ type config struct {
 	SessionTTL   time.Duration
 	JWTTTL       time.Duration
 	SecureCookie bool
+	DevMode      bool
+}
+
+// loadDotEnv procura um .env subindo do CWD ate 4 niveis e carrega o
+// primeiro encontrado. NAO sobrescreve variaveis ja definidas no ambiente.
+// Silencioso quando nao acha o arquivo.
+func loadDotEnv() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+	dir := cwd
+	for i := 0; i < 5; i++ {
+		path := filepath.Join(dir, ".env")
+		if _, err := os.Stat(path); err == nil {
+			if err := godotenv.Load(path); err != nil {
+				log.Printf(".env encontrado mas falhou ao carregar (%s): %v", path, err)
+				return
+			}
+			log.Printf(".env carregado: %s", path)
+			return
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
 }
 
 func configFromEnv() config {
@@ -188,6 +269,7 @@ func configFromEnv() config {
 	if env == "" {
 		env = "dev"
 	}
+	isProd := env == "prod" || env == "production"
 
 	return config{
 		Addr:         addr,
@@ -196,7 +278,8 @@ func configFromEnv() config {
 		JWTKey:       deriveSecret("JWT_SECRET", 32),
 		SessionTTL:   12 * time.Hour,
 		JWTTTL:       8 * time.Hour,
-		SecureCookie: env == "prod" || env == "production",
+		SecureCookie: isProd,
+		DevMode:      !isProd,
 	}
 }
 

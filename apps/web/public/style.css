@@ -1248,3 +1248,299 @@ button:hover,
 .module-card a:hover {
   text-decoration: underline;
 }
+
+/* ------------------------------------------------------------------------- */
+/* Clientes (split 40 / 60)                                                  */
+/* ------------------------------------------------------------------------- */
+.clientes-shell {
+  display: grid;
+  grid-template-columns: minmax(360px, 40%) 1fr;
+  gap: 0;
+  height: calc(100vh - 60px);
+  background: #f5f7fb;
+}
+.clientes-list {
+  background: #fff;
+  border-right: 1px solid #e4e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.clientes-list__head {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e4e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.clientes-list__head h2 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a566e;
+}
+.clientes-list__head input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid #d4d9e3;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.clientes-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+.clientes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.clientes-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f0f3f9;
+  color: #4a566e;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e4e8f0;
+}
+.clientes-table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eef1f6;
+  vertical-align: middle;
+}
+.clientes-table tbody tr.cliente-row {
+  cursor: pointer;
+}
+.clientes-table tbody tr.cliente-row:hover {
+  background: #f5f8fd;
+}
+.clientes-empty {
+  padding: 24px;
+  text-align: center;
+  color: #8a93a8;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.badge--ok      { background: #e6f6ed; color: #1d7a3a; }
+.badge--danger  { background: #fde7e7; color: #b32424; }
+
+.clientes-form-wrap {
+  overflow-y: auto;
+  padding: 24px 28px 60px;
+}
+.cliente-form {
+  max-width: 960px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e4e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(15, 23, 48, 0.04);
+}
+.cliente-form__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid #eef1f6;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+.cliente-form__head h1 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+.cliente-form .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  opacity: 0.6;
+  margin: 0;
+}
+.cliente-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.btn {
+  border: 1px solid transparent;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary {
+  background: #4f7cff;
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) { background: #3a66e8; }
+.btn-ghost {
+  background: #fff;
+  border-color: #d4d9e3;
+  color: #2a3247;
+}
+.btn-ghost:hover { background: #f4f6fb; }
+.btn-danger-ghost {
+  background: #fff;
+  border-color: #f3c4c4;
+  color: #b32424;
+}
+.btn-danger-ghost:hover { background: #fde7e7; }
+
+.form-alert {
+  background: #fde7e7;
+  border: 1px solid #f3c4c4;
+  color: #8a1f1f;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #4a566e;
+}
+.field span {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.field input,
+.field select,
+.field textarea {
+  padding: 8px 10px;
+  border: 1px solid #d4d9e3;
+  border-radius: 7px;
+  font-size: 14px;
+  background: #fff;
+  color: #1c2436;
+  width: 100%;
+  box-sizing: border-box;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid #6aa1ff;
+  outline-offset: 1px;
+  border-color: #6aa1ff;
+}
+.field input[disabled],
+.field input[readonly] {
+  background: #f5f7fb;
+  color: #8a93a8;
+}
+.field textarea { resize: vertical; min-height: 70px; }
+
+.field-xs   { grid-column: span 2; }
+.field-sm   { grid-column: span 3; }
+.field-md   { grid-column: span 4; }
+.field-lg   { grid-column: span 8; }
+.field-full { grid-column: span 12; }
+
+.bloqueio-card {
+  margin-top: 18px;
+  border: 1px solid #e4e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fafbfd;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+}
+.bloqueio-card legend {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a566e;
+  padding: 0 6px;
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.toggle input { display: none; }
+.toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e6f6ed;
+  color: #1d7a3a;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.toggle-pill::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1d7a3a;
+  display: inline-block;
+}
+.toggle input:checked + .toggle-pill {
+  background: #fde7e7;
+  color: #b32424;
+}
+.toggle input:checked + .toggle-pill::before {
+  background: #b32424;
+}
+
+.cliente-form__foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #eef1f6;
+}
+
+.topnav-tabs a.active {
+  opacity: 1;
+  border-bottom: 2px solid #6aa1ff;
+  padding-bottom: 2px;
+}
+
+@media (max-width: 960px) {
+  .clientes-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .clientes-list {
+    border-right: none;
+    border-bottom: 1px solid #e4e8f0;
+    max-height: 50vh;
+  }
+  .field-xs, .field-sm, .field-md, .field-lg { grid-column: span 12; }
+}

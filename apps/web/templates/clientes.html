@@ -1,0 +1,384 @@
+{{define "clientes"}}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+  </head>
+  <body>
+    <header class="topnav">
+      <div class="topnav-brand">
+        <a href="/" style="color:inherit;text-decoration:none"><strong>tsure</strong></a>
+        <span>Clientes</span>
+      </div>
+      <nav class="topnav-tabs" aria-label="Modulos">
+        <a href="/">Dashboard</a>
+        <a href="/clientes" class="active">Clientes</a>
+        <a href="/orders">Ordens</a>
+      </nav>
+      <div class="topnav-user">
+        <span class="user-pill" title="{{.User.Email}}">
+          <strong>{{.User.Nome}}</strong>
+          <small>{{.User.Papel}}</small>
+        </span>
+        <form method="post" action="/logout">
+          {{.CSRFField}}
+          <button type="submit" class="link-button">Sair</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="clientes-shell">
+      <!-- LISTA / TABELA (esquerda 40%) -->
+      <aside class="clientes-list">
+        <div class="clientes-list__head">
+          <h2>Clientes cadastrados</h2>
+          <input
+            type="search"
+            id="cliente-search"
+            name="q"
+            placeholder="Pesquisar por nome ou documento..."
+            value="{{.Query}}"
+            hx-get="/clientes/rows"
+            hx-trigger="keyup changed delay:300ms, search"
+            hx-target="#clientes-tbody"
+            hx-swap="innerHTML"
+          />
+        </div>
+
+        <div class="clientes-table-wrap">
+          <table class="clientes-table">
+            <thead>
+              <tr>
+                <th>Razao Social</th>
+                <th>Tipo</th>
+                <th>Documento</th>
+                <th>Contato</th>
+                <th>Telefone</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-tbody">
+              {{template "clientes-rows-inner" .}}
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
+      <!-- FORMULARIO (direita 60%) -->
+      <section class="clientes-form-wrap">
+        {{template "clientes-form" .}}
+      </section>
+    </main>
+
+    <script>
+      // ----- Mascaras -----
+      function onlyDigits(s) { return (s || "").replace(/\D+/g, ""); }
+      function maskCPF(v) {
+        v = onlyDigits(v).slice(0, 11);
+        return v
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      }
+      function maskCNPJ(v) {
+        v = onlyDigits(v).slice(0, 14);
+        return v
+          .replace(/^(\d{2})(\d)/, "$1.$2")
+          .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+          .replace(/\.(\d{3})(\d)/, ".$1/$2")
+          .replace(/(\d{4})(\d)/, "$1-$2");
+      }
+      function maskTelFixo(v) {
+        v = onlyDigits(v).slice(0, 10);
+        return v.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+      }
+      function maskCelular(v) {
+        v = onlyDigits(v).slice(0, 11);
+        return v.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+      }
+      function maskCEP(v) {
+        v = onlyDigits(v).slice(0, 8);
+        return v.replace(/(\d{5})(\d{1,3})$/, "$1-$2");
+      }
+      function bindMask(input, fn) {
+        if (!input) return;
+        input.value = fn(input.value);
+        input.addEventListener("input", () => { input.value = fn(input.value); });
+      }
+
+      // ----- Toggle bloqueado -----
+      function syncMotivo() {
+        const chk = document.querySelector("#cliente-bloqueado");
+        const motivo = document.querySelector("#cliente-motivo-bloqueio");
+        if (!chk || !motivo) return;
+        motivo.disabled = !chk.checked;
+        if (!chk.checked) motivo.value = "";
+      }
+
+      // ----- Reinicializa apos cada swap do HTMX -----
+      function initClienteForm() {
+        const tipo = document.querySelector("#cliente-tipo");
+        const doc = document.querySelector("#cliente-documento");
+        const telFixo = document.querySelector("#cliente-tel-fixo");
+        const telCel = document.querySelector("#cliente-tel-celular");
+        const cep = document.querySelector("#cliente-cep");
+
+        function applyDocMask() {
+          if (!doc) return;
+          const fn = (tipo && tipo.value === "pessoa_fisica") ? maskCPF : maskCNPJ;
+          doc.value = fn(doc.value);
+        }
+        if (tipo && doc) {
+          tipo.addEventListener("change", applyDocMask);
+          applyDocMask();
+          doc.addEventListener("input", applyDocMask);
+        }
+        bindMask(telFixo, maskTelFixo);
+        bindMask(telCel, maskCelular);
+        bindMask(cep, maskCEP);
+
+        const chk = document.querySelector("#cliente-bloqueado");
+        if (chk) {
+          chk.addEventListener("change", syncMotivo);
+          syncMotivo();
+        }
+      }
+      document.addEventListener("DOMContentLoaded", initClienteForm);
+      document.body.addEventListener("htmx:afterSwap", initClienteForm);
+
+      // ----- Acoes da barra -----
+      document.body.addEventListener("click", (e) => {
+        const t = e.target.closest("[data-action]");
+        if (!t) return;
+        const action = t.dataset.action;
+        if (action === "focar-busca") {
+          const input = document.querySelector("#cliente-search");
+          if (input) { input.focus(); input.select(); }
+        }
+        if (action === "fechar") {
+          window.location.href = "/";
+        }
+      });
+    </script>
+  </body>
+</html>
+{{end}}
+
+{{/* ------------------------------------------------------------------- */}}
+{{/* Tabela: linhas (HTMX search swap)                                    */}}
+{{/* ------------------------------------------------------------------- */}}
+
+{{define "clientes-rows"}}{{template "clientes-rows-inner" .}}{{end}}
+
+{{define "clientes-rows-inner"}}
+{{if .Clientes}}
+  {{range .Clientes}}
+  <tr
+    class="cliente-row"
+    hx-get="/clientes/{{.ID}}/edit"
+    hx-target="#cliente-form"
+    hx-swap="outerHTML"
+    tabindex="0"
+  >
+    <td><strong>{{.NomeRazaoSocial}}</strong></td>
+    <td>{{.TipoLabel}}</td>
+    <td>{{.DocumentoFormatado}}</td>
+    <td>{{.ContatoCliente}}</td>
+    <td>{{if .TelefoneCelular}}{{.TelefoneCelular}}{{else}}{{.TelefoneFixo}}{{end}}</td>
+    <td>
+      {{if .Bloqueado}}
+        <span class="badge badge--danger">Bloqueado</span>
+      {{else}}
+        <span class="badge badge--ok">Ativo</span>
+      {{end}}
+    </td>
+  </tr>
+  {{end}}
+{{else}}
+  <tr><td colspan="6" class="clientes-empty">
+    {{if .Query}}Nenhum cliente encontrado para "{{.Query}}".{{else}}Nenhum cliente cadastrado ainda.{{end}}
+  </td></tr>
+{{end}}
+{{end}}
+
+{{/* ------------------------------------------------------------------- */}}
+{{/* Formulario completo                                                  */}}
+{{/* ------------------------------------------------------------------- */}}
+
+{{define "clientes-form"}}
+<form
+  id="cliente-form"
+  class="cliente-form"
+  method="post"
+  action="{{if .IsNew}}/clientes{{else}}/clientes/{{.Cliente.ID}}{{end}}"
+  hx-post="{{if .IsNew}}/clientes{{else}}/clientes/{{.Cliente.ID}}{{end}}"
+  hx-target="#cliente-form"
+  hx-swap="outerHTML"
+>
+  {{.CSRFField}}
+
+  {{if .Error}}<div class="form-alert" role="alert">{{.Error}}</div>{{end}}
+
+  <header class="cliente-form__head">
+    <div>
+      <p class="eyebrow">{{if .IsNew}}Novo cliente{{else}}Editando cliente{{end}}</p>
+      <h1>{{if .Cliente.NomeRazaoSocial}}{{.Cliente.NomeRazaoSocial}}{{else}}Dados cadastrais{{end}}</h1>
+    </div>
+    <div class="cliente-actions">
+      {{if not .IsNew}}
+        <a class="btn btn-ghost" href="/agenda?cliente={{.Cliente.ID}}">Agendar evento</a>
+      {{end}}
+      <button type="button" class="btn btn-ghost" data-action="focar-busca">Localizar</button>
+      <button type="button" class="btn btn-ghost"
+              hx-get="/clientes/new" hx-target="#cliente-form" hx-swap="outerHTML">Novo</button>
+      <button type="submit" class="btn btn-primary" {{if .IsNew}}disabled{{end}}>Salvar alteracao</button>
+      <button type="submit" class="btn btn-primary" {{if not .IsNew}}style="display:none"{{end}}>Gravar</button>
+      <button type="button" class="btn btn-ghost" data-action="fechar">Fechar</button>
+    </div>
+  </header>
+
+  <div class="form-grid">
+    <label class="field field-sm">
+      <span>Cod. Cliente</span>
+      <input type="text" value="{{if .Cliente.ID}}{{.Cliente.ID}}{{else}}auto{{end}}" readonly disabled />
+    </label>
+
+    <label class="field field-lg">
+      <span>Razao social / Nome</span>
+      <input type="text" name="nome_razao_social" value="{{.Cliente.NomeRazaoSocial}}" required maxlength="200" />
+    </label>
+
+    <label class="field field-sm">
+      <span>Tipo</span>
+      <select name="tipo" id="cliente-tipo" required>
+        <option value="pessoa_juridica" {{if eq .Cliente.Tipo "pessoa_juridica"}}selected{{end}}>Juridica</option>
+        <option value="pessoa_fisica" {{if eq .Cliente.Tipo "pessoa_fisica"}}selected{{end}}>Fisica</option>
+      </select>
+    </label>
+
+    <label class="field field-md">
+      <span>CPF / CNPJ</span>
+      <input type="text" name="documento" id="cliente-documento" value="{{.Cliente.DocumentoFormatado}}" required />
+    </label>
+
+    <label class="field field-lg">
+      <span>Endereco</span>
+      <input type="text" name="logradouro" value="{{.Cliente.Logradouro}}" maxlength="200" />
+    </label>
+
+    <label class="field field-xs">
+      <span>Nr</span>
+      <input type="text" name="numero" value="{{.Cliente.Numero}}" maxlength="20" />
+    </label>
+
+    <label class="field field-md">
+      <span>Complemento</span>
+      <input type="text" name="complemento" value="{{.Cliente.Complemento}}" maxlength="120" />
+    </label>
+
+    <label class="field field-md">
+      <span>Bairro</span>
+      <input type="text" name="bairro" value="{{.Cliente.Bairro}}" maxlength="120" />
+    </label>
+
+    <label class="field field-md">
+      <span>Cidade</span>
+      <input type="text" name="cidade" list="lista-cidades" value="{{.Cliente.Cidade}}" maxlength="120" />
+      <datalist id="lista-cidades">
+        {{range .Cidades}}<option value="{{.Nome}}"></option>{{end}}
+      </datalist>
+    </label>
+
+    <label class="field field-xs">
+      <span>UF</span>
+      <select name="uf">
+        <option value=""></option>
+        {{range .UFs}}<option value="{{.Sigla}}" {{if eq $.Cliente.UF .Sigla}}selected{{end}}>{{.Sigla}}</option>{{end}}
+      </select>
+    </label>
+
+    <label class="field field-sm">
+      <span>CEP</span>
+      <input type="text" name="cep" id="cliente-cep" value="{{.Cliente.CEP}}" maxlength="10" />
+    </label>
+
+    <label class="field field-sm">
+      <span>Telefone fixo</span>
+      <input type="text" name="telefone_fixo" id="cliente-tel-fixo" value="{{.Cliente.TelefoneFixo}}" maxlength="30" />
+    </label>
+
+    <label class="field field-sm">
+      <span>Telefone celular</span>
+      <input type="text" name="telefone_celular" id="cliente-tel-celular" value="{{.Cliente.TelefoneCelular}}" maxlength="30" />
+    </label>
+
+    <label class="field field-md">
+      <span>Contato</span>
+      <input type="text" name="contato_cliente" value="{{.Cliente.ContatoCliente}}" maxlength="200" />
+    </label>
+
+    <label class="field field-md">
+      <span>E-mail</span>
+      <input type="email" name="email" value="{{.Cliente.Email}}" maxlength="200" />
+    </label>
+
+    <label class="field field-full">
+      <span>Observacao</span>
+      <textarea name="observacoes" rows="3" maxlength="2000">{{.Cliente.Observacoes}}</textarea>
+    </label>
+  </div>
+
+  <fieldset class="bloqueio-card">
+    <legend>Status</legend>
+    <label class="toggle">
+      <input
+        type="checkbox"
+        name="bloqueado"
+        id="cliente-bloqueado"
+        {{if .Cliente.Bloqueado}}checked{{end}}
+      />
+      <span class="toggle-pill">Bloqueado</span>
+    </label>
+    <label class="field field-full">
+      <span>Motivo do bloqueio</span>
+      <input
+        type="text"
+        name="motivo_bloqueio"
+        id="cliente-motivo-bloqueio"
+        value="{{.Cliente.MotivoBloqueio}}"
+        maxlength="240"
+        {{if not .Cliente.Bloqueado}}disabled{{end}}
+      />
+    </label>
+  </fieldset>
+
+  {{if not .IsNew}}
+  <footer class="cliente-form__foot">
+    <button
+      type="button"
+      class="btn btn-danger-ghost"
+      hx-post="/clientes/{{.Cliente.ID}}/delete"
+      hx-target="#cliente-form"
+      hx-swap="outerHTML"
+      hx-confirm="Excluir este cliente?"
+    >Excluir</button>
+  </footer>
+  {{end}}
+</form>
+{{end}}
+
+{{/* ------------------------------------------------------------------- */}}
+{{/* Form + tabela (OOB) usados apos POST/PUT/DELETE                      */}}
+{{/* ------------------------------------------------------------------- */}}
+
+{{define "clientes-form-with-rows"}}
+{{template "clientes-form" .}}
+<tbody id="clientes-tbody" hx-swap-oob="true">
+  {{template "clientes-rows-inner" (rowsData .Clientes "")}}
+</tbody>
+{{end}}

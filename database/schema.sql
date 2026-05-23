@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     email               citext,
     telefone_fixo       varchar(30),
     telefone_celular    varchar(30),
+    contato_cliente     varchar(200),
     logradouro          varchar(200),
     numero              varchar(20),
     complemento         varchar(120),
@@ -154,7 +155,11 @@ CREATE TABLE IF NOT EXISTS clientes (
     deleted_at          timestamptz
 );
 
+-- idempotente para bancos ja existentes
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS contato_cliente varchar(200);
+
 CREATE INDEX IF NOT EXISTS idx_clientes_nome  ON clientes (lower(nome_razao_social)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_clientes_doc   ON clientes (documento) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_clientes_cidade ON clientes (uf, cidade);
 
 DROP TRIGGER IF EXISTS clientes_set_updated_at ON clientes;

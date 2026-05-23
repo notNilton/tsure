@@ -12,6 +12,7 @@ import (
 
 	"tsure/apps/web/internal/auth"
 	"tsure/apps/web/internal/middleware"
+	"tsure/apps/web/internal/render"
 )
 
 // AuthHandler agrupa as dependencias para fluxos de login (web + API).
@@ -20,7 +21,7 @@ type AuthHandler struct {
 	Sessions     *auth.SessionStore
 	JWT          *auth.JWTSigner
 	SecureCookie bool
-	Templates    *template.Template
+	Templates    render.Executor
 }
 
 // LoginPageData e o ViewModel da pagina /login.
