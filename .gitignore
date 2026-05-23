@@ -138,3 +138,7 @@ local.properties
 captures/
 build/
 app/build/
+
+# Microsoft Access databases
+*.mdb
+*.accdb
