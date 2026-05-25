@@ -90,4 +90,4 @@ O repositorio deixa de ser template e passa a assumir explicitamente o produto
 - financeiro de recebiveis;
 - base para RH, fiscal e auditoria.
 
-Os documentos de produto e arquitetura estao em [docs/README.md](./docs/README.md).
+Os documentos de produto e arquitetura estao em [docs/README.md](docs/README.md).
