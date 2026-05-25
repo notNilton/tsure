@@ -27,7 +27,7 @@
           <strong>{{.User.Nome}}</strong>
           <small>{{.User.Papel}}</small>
         </span>
-        <form method="post" action="/logout">
+        <form method="post" action="/logout" hx-boost="false">
           {{.CSRFField}}
           <button type="submit" class="link-button">Sair</button>
         </form>

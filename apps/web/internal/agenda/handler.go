@@ -175,7 +175,11 @@ func (h *Handler) ServeNew(w http.ResponseWriter, r *http.Request) {
 		a.ClienteID = clienteRef.ID
 		a.ClienteNome = clienteRef.Nome
 	}
-	h.renderPage(w, r, "", a, true, "", clienteRef)
+	if r.Header.Get("HX-Request") == "true" {
+		h.renderForm(w, r, a, true, "", clienteRef)
+	} else {
+		h.renderPage(w, r, "", a, true, "", clienteRef)
+	}
 }
 
 func (h *Handler) handleEdit(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
